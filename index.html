@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lyric Dynamic Video Player</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FontInter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Fluid Animated Background */
+        .gradient-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab, #8a2be2);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Dynamic Glassmorphism */
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Pulse Animation */
+        @keyframes subtlePulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.03); opacity: 0.9; }
+        }
+
+        .animate-pulse-subtle {
+            animation: subtlePulse 2s ease-in-out infinite;
+        }
+
+        /* Line Transition Styles */
+        .text-lyric {
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Адаптация под мобильные (Safe Area для iPhone) */
+        .mobile-frame {
+            height: 100vh;
+            height: 100dvh; /* Динамическая высота для мобильных браузеров */
+            padding-bottom: env(safe-area-inset-bottom, 1rem);
+            padding-top: env(safe-area-inset-top, 1rem);
+        }
+
+        @media (min-width: 640px) {
+            .mobile-frame {
+                height: 880px;
+                max-width: 420px;
+                border-radius: 48px;
+                border: 8px solid rgba(31, 41, 55, 0.4);
+                padding-bottom: 1.5rem;
+                padding-top: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center p-0 sm:p-4 overflow-hidden">
+
+    <!-- Mobile Frame Container (адаптированный) -->
+    <div class="mobile-frame w-full gradient-bg relative shadow-2xl overflow-hidden flex flex-col justify-between px-4 sm:px-6">
+
+        <!-- Dynamic Island / Header -->
+        <div class="w-full flex flex-col items-center z-20 mt-2 sm:mt-0">
+            <div class="bg-black/80 backdrop-blur-md px-4 py-1.5 sm:px-5 sm:py-2 rounded-full flex items-center gap-2 sm:gap-3 border border-white/10 shadow-lg text-[10px] sm:text-xs font-medium text-white/90">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-500 animate-ping"></span>
+                    <span class="text-rose-400 font-semibold">TikTok Reel</span>
+                </div>
+                <span class="text-white/30">|</span>
+                <div class="flex items-center gap-1">
+                    <i data-lucide="music" class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sky-400"></i>
+                    <span class="truncate max-w-[100px] sm:max-w-[120px] text-gray-300">She's On My Mind</span>
+                </div>
+            </div>
+
+            <div class="mt-3 sm:mt-4 text-center">
+                <p class="text-[10px] sm:text-xs font-semibold tracking-widest text-white/70 uppercase">Сейчас играет</p>
+                <p class="text-xs sm:text-sm font-bold text-white drop-shadow-sm truncate px-4">Jonas Blue - She's On My Mind</p>
+            </div>
+        </div>
+
+        <!-- Lyrics Area -->
+        <div class="my-auto text-center px-1 z-20 flex flex-col items-center justify-center min-h-[100px] sm:min-h-[140px]">
+            <div id="lyric-container" class="transition-all duration-500 ease-out transform translate-y-0 opacity-100">
+                <h1 id="lyric-text" class="text-xl sm:text-3xl font-extrabold tracking-tight leading-tight text-white drop-shadow-md text-lyric">
+                    "Ooh, the cover's over"
+                </h1>
+                <p id="lyric-translation" class="mt-1 sm:mt-2 text-[10px] sm:text-sm font-medium text-white/80 drop-shadow">
+                    (Оу, обложка снята / все раскрыто)
+                </p>
+            </div>
+        </div>
+
+        <!-- Interactive Widget Area -->
+        <div class="w-full mb-3 sm:mb-4 z-20 flex justify-center">
+            <div id="widget-card" class="w-full glass-dark rounded-2xl sm:rounded-3xl p-4 sm:p-6 transition-all duration-500 transform shadow-2xl relative overflow-hidden min-h-[160px] sm:min-h-[220px] flex flex-col justify-center">
+                <!-- Content inserted dynamically -->
+            </div>
+        </div>
+
+        <!-- Audio Player Controls -->
+        <div class="w-full z-20 bg-black/40 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/10 flex flex-col gap-2 sm:gap-3 mb-2 sm:mb-0">
+            
+            <!-- Progress Bar -->
+            <div class="w-full flex flex-col gap-1">
+                <div class="w-full bg-white/20 h-1 sm:h-1.5 rounded-full overflow-hidden cursor-pointer" id="progress-container">
+                    <div id="progress-bar" class="bg-gradient-to-r from-rose-500 to-indigo-500 h-full w-0 transition-all duration-100"></div>
+                </div>
+                <div class="flex justify-between text-[9px] sm:text-[10px] font-mono text-white/60">
+                    <span id="current-time">0:00</span>
+                    <span id="total-time">0:32</span>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center justify-between px-1 sm:px-2">
+                <div class="flex items-center gap-1 text-[10px] sm:text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border border-emerald-500/30">
+                    <i data-lucide="radio" class="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse"></i>
+                    <span>Sync ON</span>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Кнопка Play стала крупнее для удобства нажатия -->
+                    <button id="btn-play" class="p-3 sm:p-3.5 rounded-full bg-white text-black hover:bg-gray-200 transition shadow-lg active:scale-95 flex items-center justify-center">
+                        <i data-lucide="play" class="w-5 h-5 sm:w-6 sm:h-6 fill-black" id="play-icon"></i>
+                    </button>
+                </div>
+
+                <span class="text-[10px] sm:text-xs text-white/60">iOS UI</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Встроенный аудиофайл -->
+    <audio id="audio-player" src="нужный кусок.mp3"></audio>
+
+    <script>
+        const lyricsData = [
+            {
+                startTime: 0,
+                text: "Ooh, the cover's over",
+                translation: "Оу, обложка снята",
+                widget: {
+                    type: "album",
+                    title: "Apple Music",
+                    subtitle: "Альбом «She's On My Mind»",
+                    artwork: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&auto=format&fit=crop&q=80",
+                    badge: "ПРЕМЬЕРА"
+                }
+            },
+            {
+                startTime: 3,
+                text: "If I could dream I'd hold you",
+                translation: "Если бы я мог видеть сны, я бы обнимал тебя",
+                widget: {
+                    type: "photo",
+                    title: "Воспоминания",
+                    subtitle: "Сон и мечты • Вчера",
+                    img: "https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?w=400&auto=format&fit=crop&q=80",
+                    tag: "Обнять тебя"
+                }
+            },
+            {
+                startTime: 6,
+                text: "Can't stop thinking, am I even on your mind",
+                translation: "Не могу перестать думать, есть ли я вообще в твоих мыслях?",
+                widget: {
+                    type: "search",
+                    title: "Поиск в Spotlight",
+                    query: "Думаешь ли ты обо мне?",
+                    results: ["Мысли о ней", "Сообщения (0 неотвеченных)"]
+                }
+            },
+            {
+                startTime: 11,
+                text: "Now, the nights are colder",
+                translation: "Теперь ночи стали холоднее",
+                widget: {
+                    type: "weather",
+                    location: "За окном",
+                    temp: "-2°",
+                    condition: "Заморозки",
+                    subtext: "Ощущается как -7° • Холодная ночь"
+                }
+            },
+            {
+                startTime: 13,
+                text: "Miss you on my shoulder",
+                translation: "Скучаю по тебе на моем плече",
+                widget: {
+                    type: "portrait",
+                    title: "Галерея",
+                    subtitle: "Рядом со мной",
+                    img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+                    caption: "Мое плечо скучает..."
+                }
+            },
+            {
+                startTime: 16,
+                text: "Miss you there on my cheek, every night",
+                translation: "Скучаю по твоему прикосновению к моей щеке каждую ночь",
+                widget: {
+                    type: "touch",
+                    title: "Digital Touch",
+                    action: "Прикосновение поцелуя",
+                    status: "Отправлено нежно"
+                }
+            },
+            {
+                startTime: 21,
+                text: "She's on my mind, she's on my mind",
+                translation: "Она в моих мыслях, она в моих мыслях",
+                widget: {
+                    type: "thoughts",
+                    title: "Уведомление",
+                    notifications: [
+                        { app: "Мысли", msg: "Она снова в твоей голове" },
+                        { app: "Мысли", msg: "Она в твоих мыслях" }
+                    ]
+                }
+            },
+            {
+                startTime: 27,
+                text: "I can't sleep at night",
+                translation: "Я не могу спать по ночам",
+                widget: {
+                    type: "health",
+                    title: "Здоровье • Сон",
+                    hours: "0 ч. 00 мин.",
+                    status: "Бессонница",
+                    heartRate: "115 уд/мин"
+                }
+            },
+            {
+                startTime: 30,
+                text: "'Cause she ain't by my side",
+                translation: "Потому что ее нет рядом со мной",
+                widget: {
+                    type: "lonely",
+                    title: "Сейчас играет",
+                    subtitle: "She's On My Mind",
+                    status: "Её нет рядом..."
+                }
+            }
+        ];
+
+        const audio = document.getElementById('audio-player');
+        const lyricText = document.getElementById('lyric-text');
+        const lyricTranslation = document.getElementById('lyric-translation');
+        const lyricContainer = document.getElementById('lyric-container');
+        const widgetCard = document.getElementById('widget-card');
+        const btnPlay = document.getElementById('btn-play');
+        const playIcon = document.getElementById('play-icon');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const currentTimeEl = document.getElementById('current-time');
+        const totalTimeEl = document.getElementById('total-time');
+
+        let currentIndex = -1;
+
+        function renderWidget(w) {
+            let html = '';
+            switch (w.type) {
+                case 'album':
+                    html = `
+                        <div class="flex items-center gap-3 sm:gap-4">
+                            <img src="${w.artwork}" class="w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl object-cover shadow-lg border border-white/20 animate-pulse-subtle" alt="Cover"/>
+                            <div class="flex flex-col gap-1 text-left">
+                                <span class="bg-rose-500/20 text-rose-300 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full w-max border border-rose-500/30">${w.badge}</span>
+                                <h3 class="font-bold text-base sm:text-lg text-white leading-tight">${w.title}</h3>
+                                <p class="text-[10px] sm:text-xs text-white/70">${w.subtitle}</p>
+                            </div>
+                        </div>`;
+                    break;
+
+                case 'photo':
+                    html = `
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-center text-[10px] sm:text-xs text-white/60">
+                                <span class="font-semibold text-sky-400">${w.title}</span>
+                                <span>${w.subtitle}</span>
+                            </div>
+                            <div class="relative rounded-xl sm:rounded-2xl overflow-hidden h-24 sm:h-32 w-full border border-white/10">
+                                <img src="${w.img}" class="w-full h-full object-cover" alt="Memory"/>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2 sm:p-3">
+                                    <span class="text-[10px] sm:text-xs font-medium text-white">${w.tag}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                    break;
+
+                case 'search':
+                    html = `
+                        <div class="flex flex-col gap-2 sm:gap-3">
+                            <div class="text-[10px] sm:text-xs text-indigo-400 font-semibold">${w.title}</div>
+                            <div class="bg-white/10 rounded-lg sm:rounded-xl p-2 sm:p-3 text-xs sm:text-sm text-white font-medium border border-white/20">${w.query}</div>
+                            <div class="flex flex-col gap-1.5">
+                                ${w.results.map(r => `<div class="text-[10px] sm:text-xs text-white/70 bg-black/20 p-1.5 sm:p-2 rounded-lg">${r}</div>`).join('')}
+                            </div>
+                        </div>`;
+                    break;
+
+                case 'weather':
+                    html = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col text-left">
+                                <span class="text-[10px] sm:text-xs text-white/60">${w.location}</span>
+                                <span class="text-3xl sm:text-4xl font-extrabold text-sky-200 my-0.5 sm:my-1">${w.temp}</span>
+                                <span class="text-[10px] sm:text-xs text-sky-400">${w.condition}</span>
+                            </div>
+                            <i data-lucide="snowflake" class="w-10 h-10 sm:w-12 sm:h-12 text-sky-300 animate-spin" style="animation-duration: 12s;"></i>
+                        </div>`;
+                    break;
+
+                case 'portrait':
+                    html = `
+                        <div class="flex gap-3 sm:gap-4 items-center">
+                            <img src="${w.img}" class="w-20 h-24 sm:w-24 sm:h-28 rounded-xl sm:rounded-2xl object-cover border border-white/20" alt="Portrait"/>
+                            <div class="flex flex-col gap-1 sm:gap-2 text-left">
+                                <span class="text-[10px] sm:text-xs font-semibold text-pink-400">${w.title}</span>
+                                <p class="text-xs sm:text-sm font-bold text-white">${w.subtitle}</p>
+                                <p class="text-[10px] sm:text-xs text-white/70 italic bg-white/5 p-1.5 sm:p-2 rounded-lg">"${w.caption}"</p>
+                            </div>
+                        </div>`;
+                    break;
+
+                case 'touch':
+                    html = `
+                        <div class="flex flex-col items-center text-center py-1 sm:py-2 gap-1.5 sm:gap-2">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-rose-500/20 border-2 border-rose-500 flex items-center justify-center animate-bounce">
+                                <i data-lucide="hand-metal" class="w-6 h-6 sm:w-8 sm:h-8 text-rose-400"></i>
+                            </div>
+                            <h4 class="font-bold text-sm sm:text-base text-white">${w.title}</h4>
+                            <p class="text-[10px] sm:text-xs text-rose-300">${w.action}</p>
+                        </div>`;
+                    break;
+
+                case 'thoughts':
+                    html = `
+                        <div class="flex flex-col gap-1.5 sm:gap-2">
+                            <span class="text-[10px] sm:text-xs text-purple-400 font-semibold mb-0.5 sm:mb-1">${w.title}</span>
+                            ${w.notifications.map(n => `
+                                <div class="bg-white/10 p-2 sm:p-2.5 rounded-lg sm:rounded-xl border border-white/15 flex items-center gap-2 sm:gap-3">
+                                    <i data-lucide="brain" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-300"></i>
+                                    <span class="text-[10px] sm:text-xs text-white">${n.msg}</span>
+                                </div>
+                            `).join('')}
+                        </div>`;
+                    break;
+
+                case 'health':
+                    html = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex flex-col gap-0.5 sm:gap-1 text-left">
+                                <span class="text-[10px] sm:text-xs text-rose-400 font-semibold">${w.title}</span>
+                                <span class="text-2xl sm:text-3xl font-extrabold text-white">${w.hours}</span>
+                                <span class="text-[10px] sm:text-xs text-rose-300">${w.status}</span>
+                            </div>
+                            <div class="flex flex-col items-center bg-rose-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl">
+                                <i data-lucide="activity" class="w-6 h-6 sm:w-8 sm:h-8 text-rose-400 animate-pulse"></i>
+                                <span class="text-[8px] sm:text-[10px] text-white/80 font-bold mt-1">${w.heartRate}</span>
+                            </div>
+                        </div>`;
+                    break;
+
+                case 'findmy':
+                    html = `
+                        <div class="flex flex-col gap-2 sm:gap-3">
+                            <span class="text-[10px] sm:text-xs text-emerald-400 font-semibold">${w.title}</span>
+                            <div class="flex items-center gap-3 sm:gap-4 bg-white/5 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/10">
+                                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-bold text-base sm:text-lg">?</div>
+                                <div class="flex flex-col text-left">
+                                    <span class="text-xs sm:text-sm font-bold text-white">${w.person}</span>
+                                    <span class="text-[10px] sm:text-xs text-rose-400">${w.status}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                    break;
+
+                case 'lonely':
+                    html = `
+                        <div class="flex flex-col items-center justify-center text-center gap-2 sm:gap-3 py-1 sm:py-2">
+                            <div class="relative">
+                                <div class="absolute inset-0 bg-rose-500 rounded-full blur-xl opacity-40 animate-ping" style="animation-duration: 2s;"></div>
+                                <div class="w-14 h-14 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center border border-white/20 relative z-10">
+                                    <i data-lucide="heart-crack" class="w-7 h-7 sm:w-8 sm:h-8 text-rose-500 animate-pulse"></i>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-[9px] sm:text-[10px] font-bold text-rose-400 uppercase tracking-widest">${w.title}</span>
+                                <h3 class="text-base sm:text-lg font-extrabold text-white">${w.subtitle}</h3>
+                                <p class="text-[10px] sm:text-xs text-white/60 italic animate-pulse">${w.status}</p>
+                            </div>
+                        </div>`;
+                    break;
+            }
+
+            widgetCard.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function formatTime(sec) {
+            if (isNaN(sec)) return "0:00";
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        audio.addEventListener('loadedmetadata', () => {
+            totalTimeEl.textContent = formatTime(audio.duration);
+        });
+
+        btnPlay.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playIcon.setAttribute('data-lucide', 'pause');
+            } else {
+                audio.pause();
+                playIcon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            const curTime = audio.currentTime;
+            const duration = audio.duration;
+
+            if (duration) {
+                progressBar.style.width = `${(curTime / duration) * 100}%`;
+                currentTimeEl.textContent = formatTime(curTime);
+            }
+
+            let newIndex = 0;
+            for (let i = 0; i < lyricsData.length; i++) {
+                if (curTime >= lyricsData[i].startTime) {
+                    newIndex = i;
+                }
+            }
+
+            if (newIndex !== currentIndex) {
+                currentIndex = newIndex;
+                const item = lyricsData[currentIndex];
+
+                lyricContainer.style.opacity = '0';
+                lyricContainer.style.transform = 'translateY(10px)';
+                widgetCard.style.opacity = '0';
+
+                setTimeout(() => {
+                    lyricText.textContent = `"${item.text}"`;
+                    lyricTranslation.textContent = `(${item.translation})`;
+                    renderWidget(item.widget);
+
+                    lyricContainer.style.opacity = '1';
+                    lyricContainer.style.transform = 'translateY(0)';
+                    widgetCard.style.opacity = '1';
+                }, 80);
+            }
+        });
+
+        progressContainer.addEventListener('click', (e) => {
+            const rect = progressContainer.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const duration = audio.duration;
+            if (duration) {
+                audio.currentTime = (clickX / rect.width) * duration;
+            }
+        });
+
+        window.onload = function() {
+            lucide.createIcons();
+            renderWidget(lyricsData[0].widget);
+        };
+    </script>
+</body>
+</html>
