@@ -57,7 +57,7 @@
         /* Адаптация под мобильные (Safe Area для iPhone) */
         .mobile-frame {
             height: 100vh;
-            height: 100dvh; /* Динамическая высота для мобильных браузеров */
+            height: 100dvh;
             padding-bottom: env(safe-area-inset-bottom, 1rem);
             padding-top: env(safe-area-inset-top, 1rem);
         }
@@ -76,7 +76,7 @@
 </head>
 <body class="bg-black text-white min-h-screen flex items-center justify-center p-0 sm:p-4 overflow-hidden">
 
-    <!-- Mobile Frame Container (адаптированный) -->
+    <!-- Mobile Frame Container -->
     <div class="mobile-frame w-full gradient-bg relative shadow-2xl overflow-hidden flex flex-col justify-between px-4 sm:px-6">
 
         <!-- Dynamic Island / Header -->
@@ -140,7 +140,6 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <!-- Кнопка Play стала крупнее для удобства нажатия -->
                     <button id="btn-play" class="p-3 sm:p-3.5 rounded-full bg-white text-black hover:bg-gray-200 transition shadow-lg active:scale-95 flex items-center justify-center">
                         <i data-lucide="play" class="w-5 h-5 sm:w-6 sm:h-6 fill-black" id="play-icon"></i>
                     </button>
@@ -177,7 +176,7 @@
                     type: "photo",
                     title: "Воспоминания",
                     subtitle: "Сон и мечты • Вчера",
-                    img: "https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?w=400&auto=format&fit=crop&q=80",
+                    img: "obnimashki.jpg", // ТВОЯ КАРТИНКА
                     tag: "Обнять тебя"
                 }
             },
@@ -212,7 +211,7 @@
                     type: "portrait",
                     title: "Галерея",
                     subtitle: "Рядом со мной",
-                    img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+                    img: "sheesh.jpg", // ТВОЯ КАРТИНКА
                     caption: "Мое плечо скучает..."
                 }
             },
